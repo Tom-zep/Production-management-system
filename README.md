@@ -259,7 +259,7 @@ This project integrates business domain knowledge with system development and da
 *Advanced dashboard with trendlines, moving averages, target line, and drill-down*
 
 ###  Trendline Dashboard created by python
-![Trendline Dashboard python](08_trendline_dashboard%20python%20ver.gif)
+![Trendline Dashboard python](08_trendline_dashboard%20python%20ver.png)
 *Advanced dashboard with trendlines, moving averages, target line, and drill-down*
 
 
