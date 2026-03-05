@@ -1,4 +1,4 @@
-# Production-management-system# 生産管理システム (Production Management System)
+# Production-management-system　 生産管理システム
 
 ![VBA](https://img.shields.io/badge/VBA-Access-green)
 ![Python](https://img.shields.io/badge/Python-3.x-blue)
@@ -86,7 +86,25 @@ AI（Claude）を活用しながら、業務知識とシステム開発スキル
 - クラウド化
 
 ## 更新履歴
-### 更新情報：v2.1 (2026-02-26) 🆕
+### 🚀 アップデート概要 (2026-03-05)
+Accessからデータを抽出し、Pythonによる統計解析を経て、意思決定用のHTMLダッシュボードを自動生成するパイプラインを構築しました。455品番、5,460レコードの月次データを処理し、属人的な「勘」を「データドリブンな在庫管理」へと変革します。
+
+### 🛠 技術的なポイント
+- **データパイプライン:** `pyodbc` を使用し、Access内の在庫・製品・生産計画テーブルをSQL結合。
+- **統計解析:** `pandas` で季節係数（月次在庫 ÷ 年間平均）を自動算出。
+- **ロジック実装:** 係数に基づいた動的な適正在庫ライン（1.2倍）および安全在庫ライン（0.6倍）の算出。
+- **フロントエンド:** Pythonのf-stringを活用し、`Chart.js` データをHTMLに動的に埋め込み。
+
+### ✨ 新機能
+- **季節係数ヒートマップ:** 12ヶ月の需要波形を視覚化。
+- **3層在庫推移グラフ:** 実在庫・適正・安全ラインを同時表示。
+- **カテゴリ分析:** 冬・春・通年別の在庫内訳を積み上げ表示。
+- **自動ステータス判定:** 品番別の在庫状況（適正・不足・過剰）を自動判定。
+
+※表示されている数値はデモンストレーション用の**サンプル数字**です。
+
+---
+### v2.1 (2025-02-26) 
 #### VBA → Python 移行 + 生産実績可視化機能の追加
 
 **■ 移行の背景**
@@ -99,7 +117,7 @@ VBAでHTMLやJavaScriptを文字列連結して生成していた構造に限界
 - **堅牢性の確保:** JSONの特殊文字によるバグリスクを、Pythonの標準処理により自動解消。
 - **デバッグの容易化:** VBAの文字列管理から解放され、ロジックの修正が劇的にスムーズに。
 
-**■ 🆕 新機能：生産実績の可視化**
+**■  新機能：生産実績の可視化**
 - **KPIカード:** 今日の生産実績合計をダイレクトに表示。
 - **マルチ軸グラフ:** 月次負荷グラフに実績ラインを追加（右軸）。
 - **工場別分析:** 実績金額の内訳を円グラフで可視化。
@@ -119,10 +137,7 @@ VBAでHTMLやJavaScriptを文字列連結して生成していた構造に限界
 - `jinja2` (HTMLテンプレート)
 
 ---
-### 今後のロードマップ
-- **v2.2:** 在庫適正化ロジックの追加 ＋ 季節係数の自動計算実装予定。
 
-- 
 ### v2.0 (2025-02-19)
 - トレンドライン機能を追加（線形回帰による2ヶ月先の予測）
 - 3ヶ月移動平均線を追加
@@ -262,6 +277,10 @@ This project integrates business domain knowledge with system development and da
 ![Trendline Dashboard python](08_trendline_dashboard%20python%20ver.png)
 *Advanced dashboard with trendlines, moving averages, target line, and drill-down*
 
+### 🎥 System Demo
+![09_inventory_optimization_dashboard](09_inventory_optimization_dashboard.mp4)
+*45-second demo: Automated Seasonality Indexing & Inventory Guardrails.*
+
 
 > 📝 **Note**: All screenshots use dummy data to protect confidential information.
 
@@ -303,7 +322,34 @@ April 2024 – February 2025 (10 months)
 ---
 
 ## 📝 Changelog
-### Production Management Dashboard v2.1 🆕
+### 🚀 Release Overview (v2.2)(2026-03-06)
+Developed an automated data pipeline that extracts data from Microsoft Access, performs statistical analysis via Python, and generates an interactive HTML dashboard for strategic decision-making. 
+Processing 5,460 records across 455 SKUs to transform empirical "intuition" into "Data-Driven Inventory Management."
+
+### 🛠 Technical Highlights
+- **Data Pipeline:** SQL-based table joining (Inventory, Product, Production Plan) from Access via `pyodbc`.
+- **Analytics:** Automated calculation of the **Seasonality Index** (Monthly Inventory / Annual Average) using `pandas`.
+- **Logic Implementation:** Dynamic calculation of Optimal Stock levels (1.2x index) and Safety Stock levels (0.6x index).
+- **Frontend:** Dynamic HTML generation using Python f-strings to inject data into `Chart.js`.
+
+### ✨ Key Features
+- **Seasonality Heatmap:** Visualizes demand fluctuations over a 12-month cycle.
+- **3-Layer Inventory Chart:** Simultaneous display of actual, optimal, and safety stock levels.
+- **Category Analysis:** Stacked bar charts for seasonal categories (Winter, Spring, Year-round).
+- **Auto-Status Detection:** Automated classification of stock status (Optimal, Shortage, Overstock) per SKU.
+
+*Note: The figures shown in the demonstration are **sample data** for display purposes.*
+
+---
+
+## 🏃 How to Run
+1. `python setup_dummy_data.py` (First time only)
+2. `python generate_dashboard.py`
+-> Opens `dashboard_output.html` in your browser.
+
+
+
+### Production Management Dashboard v2.1 (2025-02-26)
 ### VBA to Python Migration & Performance Visualization
 ---
 #### 🚀 Quick Summary 
