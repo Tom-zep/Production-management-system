@@ -302,7 +302,7 @@ This project integrates business domain knowledge with system development and da
 *45-second demo: Automated Seasonality Indexing & Inventory Guardrails.*
 
 ## 🆕 v2.3: Statistical Cost Variance Analysis (t-test)
-![Analysis Dashboard](image_cac93d.png)
+![Analysis Dashboard](10_image_cac93d.png)
 
 > **"From Intuition to Evidence"**
 > This update visualizes the structural gap between planned and actual costs using paired t-tests.
