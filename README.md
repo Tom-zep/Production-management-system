@@ -86,6 +86,45 @@ AI（Claude）を活用しながら、業務知識とシステム開発スキル
 - クラウド化
 
 ## 更新履歴
+### v2.4 (2026-03-21)
+#### 負荷金額 月次トレンド回帰 → 来年予測ダッシュボード
+
+**概要**
+過去3年分（2023〜2025年）の月次負荷金額をPythonで単回帰分析し、
+2026年12ヶ月の予測値と95%信頼区間を自動算出するダッシュボードを追加。
+経営計画の根拠を「感覚」から「統計的トレンド」へ。
+
+**技術的なポイント**
+- scipy.stats.linregress で単回帰分析（通し月番号 → 負荷金額）
+- 残差標準誤差・t分布から95%信頼区間を算出
+- Pythonが全計算を担い、結果をJSONでChart.jsに受け渡す明確な役割分担
+- Chart.jsで実績棒グラフ＋回帰直線・予測ライン＋信頼区間を可視化
+- python generate_forecast_dashboard.py 1行でHTMLダッシュボードを生成
+
+**新機能**
+- 実績＋回帰直線グラフ（2023〜2025年 36ヶ月）
+- 2026年 月次予測グラフ（予測値＋95%信頼区間）
+- KPIカード：回帰式・R²・p値・年間予測合計
+- 月別予測テーブル（予測値・CI上限・CI下限・幅）
+
+**v2.3との差別化**
+| | v2.3 | v2.4 |
+|---|---|---|
+| 手法 | 対応のあるt検定 | 単回帰分析 |
+| 目的 | 乖離の有無を判定 | 未来の値を予測 |
+| アウトプット | 有意差の判定結果 | 12ヶ月の予測値＋信頼区間 |
+| 経営活用 | コスト超過の証明 | 来年度予算計画の根拠 |
+
+**実行方法**
+```
+python generate_forecast_dashboard.py
+→ forecast_dashboard.html が生成されます
+```
+**使用ライブラリ**
+```
+numpy, scipy, json（標準）
+※ HTML表示はChart.js（CDN）
+```
 ### v2.3 (2026-03-13)
 #### 負荷金額 計画 vs 実績 乖離検定ダッシュボード
 
@@ -231,7 +270,7 @@ This project integrates business domain knowledge with system development and da
 - KPI comparison vs previous version
 - Interactive filtering
 
-### 🆕 Trendline Dashboard (HTML + Plotly.js) — v2.0
+### Trendline Dashboard (HTML + Plotly.js) — v2.0
 - **Trendline** (linear regression forecast for 2 months ahead)
 - **3-month Moving Average** (trend smoothing)
 - **Target Line** (customizable threshold display)
@@ -301,11 +340,14 @@ This project integrates business domain knowledge with system development and da
 ![09_inventory_optimization_dashboard](09_inventory_optimization_dashboard.mp4)
 *45-second demo: Automated Seasonality Indexing & Inventory Guardrails.*
 
-## 🆕 v2.3: Statistical Cost Variance Analysis (t-test)
+##  v2.3: Statistical Cost Variance Analysis (t-test)
 ![Analysis Dashboard](10_image_cac93d.png)
-
-> **"From Intuition to Evidence"**
+**"From Intuition to Evidence"**
 > This update visualizes the structural gap between planned and actual costs using paired t-tests.
+
+##  v2.4: Monthly Cost Trend Regression & Forecasting Dashboard
+![Analysis Dashboard](11_python generate_forecast_dashboard)
+ 
 
 > 📝 **Note**: All screenshots use dummy data to protect confidential information.
 
@@ -347,6 +389,33 @@ April 2024 – February 2025 (10 months)
 ---
 
 ## 📝 Changelog
+### v2.4 (2026-03-17)
+#### Monthly Cost Trend Regression & Forecasting Dashboard
+
+**Overview**
+Developed an automated forecasting dashboard that applies **simple linear regression** to 36 months of historical cost data (2023–2025). This tool generates monthly forecasts for 2026 with **95% confidence intervals**, shifting management's planning from "intuition-based" to "statistically grounded" decision-making.
+
+**Technical Highlights**
+- **Statistical Analysis:** Leveraged `scipy.stats.linregress` for regression analysis (Time Index vs. Load Cost).
+- **Predictive Modeling:** Calculated 95% confidence intervals using **Residual Standard Error** and **t-distribution**.
+- **Seamless Integration:** Fully automated Python backend that exports computed results as JSON to a **Chart.js** frontend.
+- **One-Click Deployment:** A single command (`python generate_forecast_dashboard.py`) generates a comprehensive HTML dashboard.
+
+**Key Features**
+- **Historical Analysis:** Visualize 36-month trends with an overlaid regression line.
+- **2026 Projections:** Monthly forecasts featuring predictive lines and shaded confidence bands.
+- **KPI Cards:** Real-time display of the Regression Equation, **R² (Coefficient of Determination)**, **p-value**, and Total Annual Forecast.
+- **Detailed Forecast Table:** Tabular data including mean predictions, upper/lower CI bounds, and variance.
+
+**Strategic Evolution: v2.3 vs. v2.4**
+
+| Feature | v2.3 (Validation) | v2.4 (Prediction) |
+| :--- | :--- | :--- |
+| **Methodology** | Paired t-test | **Simple Linear Regression** |
+| **Primary Goal** | Identify significant variance | **Predict future expenditure** |
+| **Output** | P-value / Significance | **12-month Forecast + Confidence Intervals** |
+| **Business Impact** | Proving cost overruns | **Establishing Data-Driven Budgetary Foundations** |
+
 ### 🚀 Release Overview (v2.2)(2026-03-06)
 Developed an automated data pipeline that extracts data from Microsoft Access, performs statistical analysis via Python, and generates an interactive HTML dashboard for strategic decision-making. 
 Processing 5,460 records across 455 SKUs to transform empirical "intuition" into "Data-Driven Inventory Management."
