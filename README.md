@@ -346,7 +346,7 @@ This project integrates business domain knowledge with system development and da
 > This update visualizes the structural gap between planned and actual costs using paired t-tests.
 
 ##  v2.4: Monthly Cost Trend Regression & Forecasting Dashboard
-![Analysis Dashboard](11_python generate_forecast_dashboard)
+![Analysis Dashboard](11_python_generate_forecast_dashboard.png)
  
 
 > 📝 **Note**: All screenshots use dummy data to protect confidential information.
