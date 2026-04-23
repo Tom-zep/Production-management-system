@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>電子回覧・捺印システム</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600;700&family=Noto+Sans+JP:wght@300;400;500&display=swap');
+
+  :root {
+    --ink: #1a1008;
+    --paper: #f5f0e8;
+    --paper-dark: #ede5d0;
+    --red: #c0392b;
+    --red-light: #e74c3c;
+    --gold: #b8952a;
+    --gold-light: #d4a843;
+    --approved: #27ae60;
+    --pending: #e67e22;
+    --shadow: rgba(26,16,8,0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: #2c2416;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,255,255,0.02) 40px, rgba(255,255,255,0.02) 41px),
+      repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(255,255,255,0.02) 40px, rgba(255,255,255,0.02) 41px);
+    min-height: 100vh;
+    color: var(--ink);
+  }
+
+  header {
+    background: linear-gradient(135deg, #1a1008 0%, #2c1f0e 100%);
+    border-bottom: 3px solid var(--gold);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 20px;
+    color: var(--gold-light);
+    letter-spacing: 0.1em;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-icon {
+    width: 34px; height: 34px;
+    border: 2px solid var(--gold);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: var(--gold);
+  }
+
+  .nav-tabs {
+    display: flex; gap: 4px;
+  }
+  .nav-tab {
+    padding: 8px 20px;
+    background: transparent;
+    border: 1px solid rgba(184,149,42,0.3);
+    color: rgba(212,168,67,0.7);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+  .nav-tab:hover, .nav-tab.active {
+    background: rgba(184,149,42,0.15);
+    border-color: var(--gold);
+    color: var(--gold-light);
+  }
+
+  .main { max-width: 1100px; margin: 0 auto; padding: 32px 20px; }
+
+  /* === DOCUMENT LIST === */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .section-title {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 22px;
+    color: var(--gold-light);
+    margin-bottom: 24px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(184,149,42,0.3);
+  }
+
+  .doc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .doc-card {
+    background: var(--paper);
+    border-radius: 4px;
+    padding: 20px;
+    cursor: pointer;
+    border-left: 4px solid #ccc;
+    box-shadow: 3px 3px 12px var(--shadow);
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .doc-card::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 0; height: 0;
+    border-style: solid;
+    border-width: 0 20px 20px 0;
+    border-color: transparent var(--paper-dark) transparent transparent;
+  }
+  .doc-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 5px 5px 20px var(--shadow);
+  }
+  .doc-card.status-pending { border-left-color: var(--pending); }
+  .doc-card.status-approved { border-left-color: var(--approved); }
+  .doc-card.status-waiting { border-left-color: #3498db; }
+
+  .doc-card-title {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .doc-card-meta {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 12px;
+    display: flex; gap: 12px;
+  }
+  .doc-card-status {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .status-pending .doc-card-status { background: #fef3e2; color: var(--pending); }
+  .status-approved .doc-card-status { background: #e8f8f0; color: var(--approved); }
+  .status-waiting .doc-card-status { background: #e8f0fe; color: #3498db; }
+
+  .stamp-row {
+    display: flex; gap: 8px; margin-top: 14px;
+    align-items: center;
+  }
+  .stamp-slot {
+    width: 44px; height: 44px;
+    border: 1.5px dashed #bbb;
+    border-radius: 4px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-size: 9px; color: #aaa;
+    gap: 2px;
+  }
+  .stamp-slot.stamped {
+    border: 2px solid var(--red);
+    background: rgba(192,57,43,0.04);
+  }
+  .stamp-seal {
+    width: 36px; height: 36px;
+    border: 2px solid var(--red);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Noto Serif JP', serif;
+    font-size: 11px;
+    color: var(--red);
+    font-weight: 700;
+    background: rgba(192,57,43,0.05);
+    position: relative;
+  }
+  .stamp-seal::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    border: 1px solid rgba(192,57,43,0.3);
+    border-radius: 50%;
+  }
+
+  /* === DOCUMENT DETAIL === */
+  .back-btn {
+    background: transparent;
+    border: 1px solid rgba(184,149,42,0.4);
+    color: var(--gold-light);
+    padding: 8px 16px;
+    cursor: pointer;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    border-radius: 4px;
+    margin-bottom: 24px;
+    transition: all 0.2s;
+  }
+  .back-btn:hover { background: rgba(184,149,42,0.1); }
+
+  .document-viewer {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .document-paper {
+    background: var(--paper);
+    border-radius: 4px;
+    padding: 40px;
+    box-shadow: 4px 4px 20px var(--shadow), 0 0 0 1px rgba(0,0,0,0.1);
+    position: relative;
+  }
+
+  .doc-header-area {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .doc-type-label {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+  }
+
+  .stamp-area-paper {
+    display: flex;
+    gap: 6px;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  .stamp-area-label {
+    font-size: 10px;
+    color: #888;
+    letter-spacing: 0.05em;
+  }
+  .stamp-boxes {
+    display: flex; gap: 4px;
+  }
+  .stamp-box {
+    width: 52px; height: 64px;
+    border: 1.5px solid #999;
+    display: flex; flex-direction: column;
+    position: relative;
+  }
+  .stamp-box-title {
+    background: var(--paper-dark);
+    border-bottom: 1px solid #999;
+    text-align: center;
+    font-size: 9px;
+    padding: 2px 0;
+    font-family: 'Noto Serif JP', serif;
+  }
+  .stamp-box-inner {
+    flex: 1;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .stamp-circle {
+    width: 38px; height: 38px;
+    border: 2px solid var(--red);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Noto Serif JP', serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--red);
+    opacity: 0;
+    transform: rotate(-8deg) scale(0.8);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 0 0 1px rgba(192,57,43,0.2) inset;
+    position: relative;
+  }
+  .stamp-circle.stamped {
+    opacity: 1;
+    transform: rotate(-8deg) scale(1);
+  }
+  .stamp-circle::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    border: 1px solid rgba(192,57,43,0.25);
+    border-radius: 50%;
+  }
+
+  .doc-body { font-size: 13px; line-height: 1.9; }
+  .doc-field-row {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+    align-items: start;
+  }
+  .doc-field-label {
+    font-weight: 500;
+    font-size: 12px;
+    color: #555;
+    padding-top: 2px;
+  }
+  .doc-field-value { font-size: 13px; }
+
+  .doc-items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 12px;
+  }
+  .doc-items-table th {
+    background: var(--paper-dark);
+    padding: 6px 10px;
+    text-align: left;
+    border: 1px solid #ccc;
+    font-weight: 500;
+    font-size: 11px;
+  }
+  .doc-items-table td {
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+  }
+  .doc-items-table tr:nth-child(even) td { background: rgba(0,0,0,0.02); }
+  .amount-row td { font-weight: 600; background: var(--paper-dark) !important; }
+
+  /* === APPROVAL PANEL === */
+  .approval-panel {
+    background: #1e1810;
+    border: 1px solid rgba(184,149,42,0.3);
+    border-radius: 8px;
+    padding: 20px;
+    position: sticky;
+    top: 80px;
+  }
+
+  .panel-title {
+    font-family: 'Noto Serif JP', serif;
+    color: var(--gold-light);
+    font-size: 15px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(184,149,42,0.2);
+  }
+
+  .flow-steps { display: flex; flex-direction: column; gap: 0; }
+
+  .flow-step {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+    position: relative;
+  }
+  .flow-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 17px;
+    top: 40px;
+    bottom: -8px;
+    width: 2px;
+    background: rgba(255,255,255,0.08);
+  }
+
+  .step-indicator {
+    width: 36px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 8px;
+  }
+  .step-dot {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.03);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    color: rgba(255,255,255,0.3);
+    transition: all 0.3s;
+    flex-shrink: 0;
+  }
+  .step-dot.done {
+    border-color: var(--approved);
+    background: rgba(39,174,96,0.1);
+    color: var(--approved);
+  }
+  .step-dot.active {
+    border-color: var(--gold);
+    background: rgba(184,149,42,0.1);
+    color: var(--gold-light);
+    box-shadow: 0 0 12px rgba(184,149,42,0.2);
+  }
+
+  .step-content {
+    flex: 1;
+    padding: 8px 0 20px;
+  }
+  .step-name {
+    font-size: 13px;
+    color: rgba(255,255,255,0.8);
+    font-weight: 500;
+    margin-bottom: 2px;
+  }
+  .step-person {
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    margin-bottom: 8px;
+  }
+  .step-date {
+    font-size: 10px;
+    color: var(--approved);
+    margin-top: 4px;
+  }
+
+  .approve-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #c0392b, #962d22);
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-family: 'Noto Serif JP', serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.1em;
+    margin-top: 8px;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(192,57,43,0.3);
+    position: relative;
+    overflow: hidden;
+  }
+  .approve-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+    pointer-events: none;
+  }
+  .approve-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(192,57,43,0.4);
+  }
+  .approve-btn:active:not(:disabled) { transform: translateY(0); }
+  .approve-btn:disabled {
+    background: #333;
+    color: #666;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  .reject-btn {
+    width: 100%;
+    padding: 10px;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+    color: rgba(255,255,255,0.4);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: all 0.2s;
+  }
+  .reject-btn:hover:not(:disabled) {
+    border-color: rgba(231,76,60,0.5);
+    color: #e74c3c;
+  }
+  .reject-btn:disabled { cursor: not-allowed; opacity: 0.3; }
+
+  .completed-badge {
+    text-align: center;
+    padding: 16px;
+    background: rgba(39,174,96,0.08);
+    border: 1px solid rgba(39,174,96,0.3);
+    border-radius: 6px;
+    color: var(--approved);
+    font-size: 13px;
+    margin-top: 8px;
+  }
+
+  /* === CREATE FORM === */
+  .form-card {
+    background: var(--paper);
+    border-radius: 4px;
+    padding: 36px;
+    box-shadow: 4px 4px 20px var(--shadow);
+    max-width: 700px;
+  }
+
+  .form-title {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 28px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .form-row.single { grid-template-columns: 1fr; }
+
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #555;
+    letter-spacing: 0.05em;
+  }
+  .form-input, .form-select, .form-textarea {
+    padding: 9px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: white;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    color: var(--ink);
+    transition: border-color 0.2s;
+    outline: none;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px rgba(184,149,42,0.15);
+  }
+  .form-textarea { resize: vertical; min-height: 80px; }
+
+  .items-table-edit { width: 100%; border-collapse: collapse; margin: 8px 0; }
+  .items-table-edit th {
+    background: var(--paper-dark);
+    padding: 7px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    border: 1px solid #ccc;
+    text-align: left;
+  }
+  .items-table-edit td { padding: 5px; border: 1px solid #ddd; }
+  .items-table-edit input {
+    width: 100%;
+    padding: 5px 7px;
+    border: none;
+    background: transparent;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px;
+    outline: none;
+  }
+  .items-table-edit input:focus { background: rgba(184,149,42,0.05); }
+  .add-row-btn {
+    padding: 6px 14px;
+    background: transparent;
+    border: 1px dashed #bbb;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #888;
+    cursor: pointer;
+    margin-top: 6px;
+    transition: all 0.2s;
+  }
+  .add-row-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+  .submit-btn {
+    padding: 14px 40px;
+    background: linear-gradient(135deg, #1a1008, #2c1f0e);
+    border: 1px solid var(--gold);
+    border-radius: 4px;
+    color: var(--gold-light);
+    font-family: 'Noto Serif JP', serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.1em;
+    margin-top: 24px;
+    transition: all 0.2s;
+  }
+  .submit-btn:hover {
+    background: linear-gradient(135deg, #2c1f0e, #3d2a12);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 30px; right: 30px;
+    background: #1a1008;
+    border: 1px solid var(--gold);
+    color: var(--gold-light);
+    padding: 14px 22px;
+    border-radius: 6px;
+    font-size: 13px;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 999;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* Stamp animation */
+  @keyframes stampIn {
+    0% { transform: rotate(-8deg) scale(2); opacity: 0; }
+    60% { transform: rotate(-8deg) scale(0.9); opacity: 1; }
+    80% { transform: rotate(-8deg) scale(1.05); }
+    100% { transform: rotate(-8deg) scale(1); opacity: 1; }
+  }
+  .stamp-circle.stamping {
+    animation: stampIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  }
+
+  .user-switch {
+    display: flex; gap: 4px; align-items: center;
+  }
+  .user-badge {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    cursor: pointer;
+    border: 1px solid rgba(184,149,42,0.3);
+    color: rgba(255,255,255,0.4);
+    background: transparent;
+    transition: all 0.2s;
+  }
+  .user-badge.active {
+    background: rgba(184,149,42,0.15);
+    border-color: var(--gold);
+    color: var(--gold-light);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">印</div>
+    電子回覧・捺印システム
+  </div>
+  <div style="display:flex; gap:16px; align-items:center;">
+    <div style="font-size:11px; color:rgba(255,255,255,0.35);">ログインユーザー：</div>
+    <div class="user-switch">
+      <button class="user-badge active" onclick="switchUser('担当者', this)">田中 (担当者)</button>
+      <button class="user-badge" onclick="switchUser('課長', this)">鈴木 (課長)</button>
+      <button class="user-badge" onclick="switchUser('部長', this)">山田 (部長)</button>
+    </div>
+  </div>
+  <nav class="nav-tabs">
+    <button class="nav-tab active" onclick="showSection('list', this)">書類一覧</button>
+    <button class="nav-tab" onclick="showSection('create', this)">新規作成</button>
+  </nav>
+</header>
+
+<div class="main">
+
+  <!-- LIST -->
+  <div id="sec-list" class="section active">
+    <div class="section-title">回覧書類一覧</div>
+    <div class="doc-grid" id="docGrid"></div>
+  </div>
+
+  <!-- DETAIL -->
+  <div id="sec-detail" class="section">
+    <button class="back-btn" onclick="showSection('list', null)">← 一覧に戻る</button>
+    <div class="document-viewer">
+      <div class="document-paper" id="docPaper"></div>
+      <div class="approval-panel" id="approvalPanel"></div>
+    </div>
+  </div>
+
+  <!-- CREATE -->
+  <div id="sec-create" class="section">
+    <div class="section-title">注文書 新規作成</div>
+    <div class="form-card">
+      <div class="form-title">注 文 書</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">注文先</label>
+          <input class="form-input" id="f-to" placeholder="株式会社〇〇">
+        </div>
+        <div class="form-group">
+          <label class="form-label">注文日</label>
+          <input class="form-input" id="f-date" type="date">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">件名</label>
+          <input class="form-input" id="f-subject" placeholder="〇〇の発注について">
+        </div>
+        <div class="form-group">
+          <label class="form-label">納期</label>
+          <input class="form-input" id="f-delivery" type="date">
+        </div>
+      </div>
+
+      <div style="margin:16px 0 8px; font-size:12px; font-weight:500; color:#555;">注文明細</div>
+      <table class="items-table-edit">
+        <thead>
+          <tr>
+            <th style="width:40%">品名</th>
+            <th style="width:15%">数量</th>
+            <th style="width:20%">単価</th>
+            <th style="width:20%">金額</th>
+            <th style="width:5%"></th>
+          </tr>
+        </thead>
+        <tbody id="itemsBody">
+          <tr>
+            <td><input placeholder="商品名"></td>
+            <td><input type="number" placeholder="1" oninput="calcRow(this)"></td>
+            <td><input type="number" placeholder="0" oninput="calcRow(this)"></td>
+            <td><input readonly style="background:#f8f8f8; color:#888"></td>
+            <td><button onclick="removeRow(this)" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:14px;">×</button></td>
+          </tr>
+        </tbody>
+      </table>
+      <button class="add-row-btn" onclick="addRow()">＋ 行を追加</button>
+
+      <div class="form-row single" style="margin-top:16px;">
+        <div class="form-group">
+          <label class="form-label">備考</label>
+          <textarea class="form-textarea" id="f-note" placeholder="特記事項があれば記入"></textarea>
+        </div>
+      </div>
+
+      <button class="submit-btn" onclick="createDocument()">回覧に提出する</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== STATE =====
+let currentUser = '担当者';
+const userMap = {
+  '担当者': { name: '田中 一郎', role: '担当者', step: 0 },
+  '課長':   { name: '鈴木 花子', role: '課長',   step: 1 },
+  '部長':   { name: '山田 太郎', role: '部長',   step: 2 },
+};
+const stepNames = ['担当者', '課長', '部長'];
+const stepPersons = ['田中 一郎', '鈴木 花子', '山田 太郎'];
+
+let documents = [
+  {
+    id: 1,
+    type: '注文書',
+    title: 'PC周辺機器 発注の件',
+    to: '株式会社テックサプライ',
+    date: '2026-04-18',
+    delivery: '2026-05-10',
+    subject: 'PC周辺機器 発注の件',
+    note: '予算内で優先対応をお願いします。',
+    items: [
+      { name: 'モニター 27インチ', qty: 3, price: 45000 },
+      { name: 'キーボード', qty: 5, price: 8000 },
+      { name: 'マウス', qty: 5, price: 3500 },
+    ],
+    stamps: [null, null, null],
+    currentStep: 1,
+  },
+  {
+    id: 2,
+    type: '注文書',
+    title: 'オフィス消耗品 一式',
+    to: '文具堂株式会社',
+    date: '2026-04-15',
+    delivery: '2026-04-25',
+    subject: 'オフィス消耗品 一式',
+    note: '',
+    items: [
+      { name: 'コピー用紙 A4 (500枚)', qty: 10, price: 650 },
+      { name: 'ボールペン (10本入)', qty: 5, price: 480 },
+    ],
+    stamps: ['田中', null, null],
+    currentStep: 1,
+  },
+  {
+    id: 3,
+    type: '注文書',
+    title: 'サーバー保守部品',
+    to: '日本インフラ株式会社',
+    date: '2026-04-10',
+    delivery: '2026-04-20',
+    subject: 'サーバー保守部品 緊急調達',
+    note: '緊急対応のため速やかにご承認ください。',
+    items: [
+      { name: 'SSD 2TB', qty: 2, price: 32000 },
+      { name: 'メモリ 16GB', qty: 4, price: 12000 },
+    ],
+    stamps: ['田中', '鈴木', '山田'],
+    currentStep: 3,
+  },
+];
+let nextId = 4;
+let currentDocId = null;
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', () => {
+  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById('f-date').value = today;
+  renderDocGrid();
+});
+
+// ===== NAVIGATION =====
+function showSection(name, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('sec-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (name === 'list') renderDocGrid();
+}
+
+function switchUser(role, btn) {
+  currentUser = role;
+  document.querySelectorAll('.user-badge').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (currentDocId !== null) {
+    openDocument(currentDocId);
+  }
+}
+
+// ===== DOC GRID =====
+function getDocStatus(doc) {
+  if (doc.currentStep >= 3) return 'approved';
+  const userStep = userMap[currentUser].step;
+  if (doc.currentStep === userStep) return 'pending';
+  return 'waiting';
+}
+
+function getStatusLabel(doc) {
+  if (doc.currentStep >= 3) return '承認完了';
+  const userStep = userMap[currentUser].step;
+  if (doc.currentStep === userStep) return '要承認';
+  if (doc.currentStep > userStep) return '次の承認待ち';
+  return '前の承認待ち';
+}
+
+function calcTotal(items) {
+  return items.reduce((s, i) => s + (i.qty * i.price), 0);
+}
+
+function renderDocGrid() {
+  const grid = document.getElementById('docGrid');
+  grid.innerHTML = documents.map(doc => {
+    const statusClass = getDocStatus(doc);
+    const label = getStatusLabel(doc);
+    const total = calcTotal(doc.items).toLocaleString();
+    const stampSlots = stepNames.map((s, i) => {
+      if (doc.stamps[i]) {
+        return `<div class="stamp-slot stamped">
+          <div class="stamp-seal">${doc.stamps[i]}</div>
+        </div>`;
+      }
+      return `<div class="stamp-slot"><span>${s}</span></div>`;
+    }).join('');
+
+    return `<div class="doc-card status-${statusClass}" onclick="openDocument(${doc.id})">
+      <div class="doc-card-title">${doc.title}</div>
+      <div class="doc-card-meta">
+        <span>${doc.to}</span>
+        <span>${doc.date}</span>
+      </div>
+      <div style="font-size:13px; font-weight:600; color:#444; margin-bottom:8px;">¥${total}</div>
+      <span class="doc-card-status">${label}</span>
+      <div class="stamp-row">${stampSlots}</div>
+    </div>`;
+  }).join('');
+}
+
+// ===== DOCUMENT DETAIL =====
+function openDocument(id) {
+  currentDocId = id;
+  const doc = documents.find(d => d.id === id);
+
+  // Render paper
+  const total = calcTotal(doc.items);
+  const taxAmount = Math.round(total * 0.1);
+  const itemRows = doc.items.map(it =>
+    `<tr><td>${it.name}</td><td style="text-align:right">${it.qty}</td><td style="text-align:right">¥${it.price.toLocaleString()}</td><td style="text-align:right">¥${(it.qty*it.price).toLocaleString()}</td></tr>`
+  ).join('');
+
+  const stampBoxes = stepNames.map((s, i) => {
+    const stamped = doc.stamps[i] ? 'stamped' : '';
+    const animClass = doc.stamps[i] ? 'stamped' : '';
+    return `<div class="stamp-box">
+      <div class="stamp-box-title">${s}</div>
+      <div class="stamp-box-inner">
+        <div class="stamp-circle ${animClass}" id="stamp-${i}">${doc.stamps[i] || ''}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('docPaper').innerHTML = `
+    <div class="doc-header-area">
+      <div class="doc-type-label">注 文 書</div>
+      <div class="stamp-area-paper">
+        <div class="stamp-area-label">承 認</div>
+        <div class="stamp-boxes">${stampBoxes}</div>
+      </div>
+    </div>
+    <div class="doc-body">
+      <div class="doc-field-row">
+        <div class="doc-field-label">注文先</div>
+        <div class="doc-field-value"><strong>${doc.to}</strong> 御中</div>
+      </div>
+      <div class="doc-field-row">
+        <div class="doc-field-label">注文日</div>
+        <div class="doc-field-value">${doc.date}</div>
+      </div>
+      <div class="doc-field-row">
+        <div class="doc-field-label">件名</div>
+        <div class="doc-field-value">${doc.subject}</div>
+      </div>
+      <div class="doc-field-row">
+        <div class="doc-field-label">希望納期</div>
+        <div class="doc-field-value">${doc.delivery}</div>
+      </div>
+      <div style="margin-top:20px;">
+        <table class="doc-items-table">
+          <thead>
+            <tr><th>品名</th><th>数量</th><th>単価</th><th>金額</th></tr>
+          </thead>
+          <tbody>
+            ${itemRows}
+          </tbody>
+          <tfoot>
+            <tr class="amount-row"><td colspan="3" style="text-align:right">小計</td><td style="text-align:right">¥${total.toLocaleString()}</td></tr>
+            <tr class="amount-row"><td colspan="3" style="text-align:right">消費税(10%)</td><td style="text-align:right">¥${taxAmount.toLocaleString()}</td></tr>
+            <tr class="amount-row"><td colspan="3" style="text-align:right"><strong>合計金額</strong></td><td style="text-align:right"><strong>¥${(total+taxAmount).toLocaleString()}</strong></td></tr>
+          </tfoot>
+        </table>
+      </div>
+      ${doc.note ? `<div class="doc-field-row"><div class="doc-field-label">備考</div><div class="doc-field-value">${doc.note}</div></div>` : ''}
+    </div>
+  `;
+
+  // Render approval panel
+  renderApprovalPanel(doc);
+
+  showSection('detail', null);
+}
+
+function renderApprovalPanel(doc) {
+  const userStep = userMap[currentUser].step;
+  const canApprove = doc.currentStep === userStep && doc.currentStep < 3;
+
+  const steps = stepNames.map((s, i) => {
+    let dotClass = '';
+    let dateEl = '';
+    if (doc.stamps[i]) {
+      dotClass = 'done';
+      dateEl = `<div class="step-date">✓ 承認済み</div>`;
+    } else if (doc.currentStep === i) {
+      dotClass = 'active';
+    }
+    const icon = doc.stamps[i] ? '✓' : (i + 1);
+    return `<div class="flow-step">
+      <div class="step-indicator">
+        <div class="step-dot ${dotClass}">${icon}</div>
+      </div>
+      <div class="step-content">
+        <div class="step-name">${s}承認</div>
+        <div class="step-person">${stepPersons[i]}</div>
+        ${dateEl}
+      </div>
+    </div>`;
+  }).join('');
+
+  let actionArea = '';
+  if (doc.currentStep >= 3) {
+    actionArea = `<div class="completed-badge">✓ 全承認完了<br><span style="font-size:11px; opacity:0.7; margin-top:4px; display:block">すべての捺印が完了しました</span></div>`;
+  } else if (canApprove) {
+    actionArea = `
+      <button class="approve-btn" onclick="approveDoc(${doc.id})">
+        ここに捺印する
+      </button>
+      <button class="reject-btn" onclick="rejectDoc(${doc.id})">差し戻す</button>
+    `;
+  } else {
+    const waitFor = stepNames[doc.currentStep];
+    actionArea = `<div style="text-align:center; padding:14px; color:rgba(255,255,255,0.3); font-size:12px;">${waitFor}の承認待ちです</div>`;
+  }
+
+  document.getElementById('approvalPanel').innerHTML = `
+    <div class="panel-title">承認フロー</div>
+    <div class="flow-steps">${steps}</div>
+    <div style="margin-top:20px; border-top:1px solid rgba(255,255,255,0.06); padding-top:16px;">
+      ${actionArea}
+    </div>
+  `;
+}
+
+// ===== APPROVE =====
+function approveDoc(id) {
+  const doc = documents.find(d => d.id === id);
+  const userStep = userMap[currentUser].step;
+  if (doc.currentStep !== userStep) return;
+
+  const shortName = userMap[currentUser].name.split(' ')[0];
+  doc.stamps[userStep] = shortName;
+  doc.currentStep++;
+
+  // Animate stamp
+  setTimeout(() => {
+    const el = document.getElementById('stamp-' + userStep);
+    if (el) {
+      el.textContent = shortName;
+      el.classList.add('stamping');
+      el.classList.add('stamped');
+    }
+  }, 50);
+
+  setTimeout(() => {
+    renderApprovalPanel(doc);
+    if (doc.currentStep >= 3) {
+      showToast('✓ 全ての承認が完了しました');
+    } else {
+      showToast(`捺印しました。${stepNames[doc.currentStep]}へ回覧されます`);
+    }
+  }, 500);
+}
+
+function rejectDoc(id) {
+  const doc = documents.find(d => d.id === id);
+  showToast('書類を差し戻しました');
+  showSection('list', null);
+}
+
+// ===== CREATE =====
+function addRow() {
+  const tbody = document.getElementById('itemsBody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input placeholder="商品名"></td>
+    <td><input type="number" placeholder="1" oninput="calcRow(this)"></td>
+    <td><input type="number" placeholder="0" oninput="calcRow(this)"></td>
+    <td><input readonly style="background:#f8f8f8; color:#888"></td>
+    <td><button onclick="removeRow(this)" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:14px;">×</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function removeRow(btn) {
+  btn.closest('tr').remove();
+}
+
+function calcRow(inp) {
+  const row = inp.closest('tr');
+  const inputs = row.querySelectorAll('input');
+  const qty = parseFloat(inputs[1].value) || 0;
+  const price = parseFloat(inputs[2].value) || 0;
+  inputs[3].value = qty && price ? '¥' + (qty * price).toLocaleString() : '';
+}
+
+function createDocument() {
+  const to = document.getElementById('f-to').value.trim();
+  const date = document.getElementById('f-date').value;
+  const subject = document.getElementById('f-subject').value.trim();
+  const delivery = document.getElementById('f-delivery').value;
+  const note = document.getElementById('f-note').value.trim();
+
+  if (!to || !subject || !date) {
+    showToast('注文先・件名・日付を入力してください');
+    return;
+  }
+
+  const rows = document.getElementById('itemsBody').querySelectorAll('tr');
+  const items = [];
+  rows.forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    const name = inputs[0].value.trim();
+    const qty = parseFloat(inputs[1].value) || 0;
+    const price = parseFloat(inputs[2].value) || 0;
+    if (name) items.push({ name, qty, price });
+  });
+
+  if (items.length === 0) {
+    showToast('明細を1行以上入力してください');
+    return;
+  }
+
+  const doc = {
+    id: nextId++,
+    type: '注文書',
+    title: subject,
+    to, date, delivery, subject, note, items,
+    stamps: [null, null, null],
+    currentStep: 0,
+  };
+  documents.unshift(doc);
+  showToast('回覧に提出しました');
+  showSection('list', document.querySelectorAll('.nav-tab')[0]);
+}
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
