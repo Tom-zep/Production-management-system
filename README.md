@@ -39,19 +39,7 @@ Excelとメールで行っていた書類の回覧・承認フローをWebベー
 
 ---
 
-## 使い方
 
-サーバー不要。ファイルをブラウザで開くだけで動作します。
-
-```bash
-# リポジトリをクローン
-git clone https://github.com/your-username/approval-workflow.git
-
-# ブラウザで開く
-open index.html
-```
-
-または [GitHub Pages](#) でそのまま公開することも可能です。
 
 ---
 
